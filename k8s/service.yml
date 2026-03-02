@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: properties-api
-  namespace: agrosolutions-ingestion
+  namespace: agrosolutions-properties
   labels:
     app: properties-api
 spec:
