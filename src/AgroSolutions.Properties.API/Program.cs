@@ -105,6 +105,6 @@ app.UseCors("AllowAll");
 app.UseJwtAuthentication();
 
 app.MapControllers();
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/healthz");
 
 app.Run();
