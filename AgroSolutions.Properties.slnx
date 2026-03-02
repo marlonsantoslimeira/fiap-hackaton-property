@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/k8s/">
+    <File Path="k8s/configmap.yml" />
+    <File Path="k8s/namespace.yml" />
+    <File Path="k8s/secrets.yml" />
+    <File Path="k8s/service.yml" />
+  </Folder>
+  <Project Path="src/AgroSolutions.Properties.API/AgroSolutions.Properties.API.csproj" />
+  <Project Path="src/AgroSolutions.Properties.Application/AgroSolutions.Properties.Application.csproj" />
+  <Project Path="src/AgroSolutions.Properties.Data/AgroSolutions.Properties.Data.csproj" />
+  <Project Path="src/AgroSolutions.Properties.Domain/AgroSolutions.Properties.Domain.csproj" />
+</Solution>

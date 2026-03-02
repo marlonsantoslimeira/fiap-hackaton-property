@@ -1,0 +1,66 @@
+name: Deploy to local cluster (self-hosted Ubuntu)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    env:
+      K8S_DIR: k8s
+      IMAGE_NAME: properties-api
+      RUN_TAG: ${{ github.run_number }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Build Docker image (API.Dockerfile)
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build \
+            -f docker/API.Dockerfile \
+            -t "${IMAGE_NAME}:${RUN_TAG}" \
+            -t "${IMAGE_NAME}:latest" \
+            .
+
+      - name: Load image into kind cluster
+        shell: bash
+        run: |
+          set -euo pipefail
+          kind load docker-image "${IMAGE_NAME}:${RUN_TAG}" --name rn-local-lab
+          kind load docker-image "${IMAGE_NAME}:latest" --name rn-local-lab
+          
+      - name: Replace tokens in manifests
+        uses: cschleiden/replace-tokens@v1
+        with:
+          files: |
+            ["${{ env.K8S_DIR }}/**/*.yml","${{ env.K8S_DIR }}/**/*.yaml"]
+        env:
+          ImageName: ${{ env.IMAGE_NAME }}:${{ env.RUN_TAG }}
+          JwtIssuer: ${{ secrets.JWT_ISSUER }}
+          JwtAudience: ${{ secrets.JWT_AUDIENCE }}
+          JwtKey: ${{ secrets.JWT_KEY }}
+          PropertiesConnectionString: ${{ secrets.PROPERTIES_CONNECTION_STRING }}
+
+      - name: Validate kubectl access (uses runner kubeconfig)
+        shell: bash
+        run: |
+          set -e
+          kubectl config current-context
+          kubectl get nodes
+
+      - name: Apply manifests
+        shell: bash
+        run: |
+          set -e
+          kubectl apply -f "${{ env.K8S_DIR }}" -R
+
+      - name: Quick status
+        shell: bash
+        run: |
+          kubectl get deploy,po,svc -A

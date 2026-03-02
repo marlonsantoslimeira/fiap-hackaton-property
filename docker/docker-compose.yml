@@ -1,0 +1,54 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: agro-properties-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD}"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -d master -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  properties-api:
+    build:
+      context: .
+      dockerfile: AgroSolutions.Properties.API/Dockerfile
+    container_name: agro-properties-api
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      PROPERTYDB_CONSTR: "Server=sqlserver,1433;Database=AgroPropertiesDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;Encrypt=False"
+
+      Jwt__Issuer: "AgroSolutions"
+      Jwt__Audience: "AgroSolutions.Api"
+
+      # opção A (mais simples): setar secret por env
+      Jwt__Secret: "${JWT_SECRET}"
+
+      # opção B (docker secrets): comente a linha Jwt__Secret acima e use esta:
+      # Jwt__Secret__File: "/run/secrets/jwt_secret"
+
+    # opção B (docker secrets):
+    # secrets:
+    #   - jwt_secret
+
+    ports:
+      - "8080:8080"
+
+volumes:
+  sqlserver_data:
+
+# opção B (docker secrets):
+# secrets:
+#   jwt_secret:
+#     file: ./secrets/jwt_secret.txt
